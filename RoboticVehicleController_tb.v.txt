@@ -1,0 +1,79 @@
+module RoboticVehicleController_tb;
+
+// Parameters
+parameter CLK_PERIOD = 10; // Clock period in ns
+
+// Signals
+reg clk = 0;
+reg rst_n = 1;
+reg [7:0] obstacle_distance;
+reg [1:0] current_location;
+reg [1:0] waypoint_location;
+
+wire [1:0] next_move;
+
+// Instantiate the DUT
+RoboticVehicleController dut (
+    .clk(clk),
+    .rst_n(rst_n),
+    .obstacle_distance(obstacle_distance),
+    .current_location(current_location),
+    .waypoint_location(waypoint_location),
+    .next_move(next_move)
+);
+
+// Clock generation
+always #((CLK_PERIOD / 2)) clk = ~clk;
+
+// Test sequence
+initial begin
+    // Reset
+    rst_n = 0;
+    #100;
+    rst_n = 1;
+    
+    // Test case 1: No obstacle, navigate to waypoint
+    obstacle_distance = 8'hFF; // No obstacle
+    current_location = 2'b00; // Starting location
+    waypoint_location = 2'b11; // Waypoint location
+    
+    #100;
+    // Expected next move: Move up
+    $display("Next move: %b (Move up)", next_move);
+    
+    // Test case 2: Obstacle, avoid obstacle
+    obstacle_distance = 8'h20; // Obstacle detected
+    current_location = 2'b00; // Starting location
+    waypoint_location = 2'b11; // Waypoint location
+    
+    #100;
+    // Expected next move: Move right
+    $display("Next move: %b (Move right)", next_move);
+
+    // Test case 3: Obstacle, avoid obstacle, then navigate to waypoint
+    obstacle_distance = 8'h20; // Obstacle detected
+    current_location = 2'b00; // Starting location
+    waypoint_location = 2'b11; // Waypoint location
+    
+    #100;
+    // Expected next move: Move right
+    $display("Next move: %b (Move right)", next_move);
+    
+    current_location = 2'b10; // Vehicle moved right
+    
+    #100;
+    // Expected next move: Move up
+    $display("Next move: %b (Move up)", next_move);
+    
+    current_location = 2'b11; // Vehicle moved up
+    
+    #100;
+    // Expected next move: No move (At waypoint)
+    $display("Next move: %b (At waypoint)", next_move);
+    
+    // Add more test cases as needed
+    
+    $finish;
+end
+
+endmodule

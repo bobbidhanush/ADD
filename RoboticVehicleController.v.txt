@@ -1,0 +1,72 @@
+module RoboticVehicleController (
+    input clk,             // Clock input
+    input rst_n,           // Reset input, active low
+    
+    // Sensor inputs
+    input [7:0] obstacle_distance,    // Distance from obstacle
+    input [1:0] current_location,     // Current location coordinates (X, Y)
+    
+    // Waypoint coordinates
+    input [1:0] waypoint_location,    // Waypoint coordinates (X, Y)
+    
+    // Movement control signals
+    output reg [1:0] next_move         // Next movement command (Up, Down, Left, Right)
+);
+
+// Internal states
+parameter IDLE = 2'b00;
+parameter AVOID_OBSTACLE = 2'b01;
+parameter NAVIGATE_TO_WAYPOINT = 2'b10;
+
+reg [1:0] state, next_state;
+
+// Distance threshold for obstacle avoidance
+parameter DIST_THRESHOLD = 8'h30;
+
+// Obstacle detection and navigation logic
+always @ (posedge clk or negedge rst_n) begin
+    if (~rst_n) begin
+        state <= IDLE;
+        next_move <= 2'b00;
+    end else begin
+        case (state)
+            IDLE: begin
+                if (obstacle_distance < DIST_THRESHOLD)
+                    next_state = AVOID_OBSTACLE;
+                else
+                    next_state = NAVIGATE_TO_WAYPOINT;
+            end
+            AVOID_OBSTACLE: begin
+                // Simple obstacle avoidance logic
+                if (obstacle_distance < DIST_THRESHOLD)
+                    next_move <= 2'b10; // Move right
+                else
+                    next_state <= NAVIGATE_TO_WAYPOINT;
+            end
+            NAVIGATE_TO_WAYPOINT: begin
+                // Simple waypoint navigation logic
+                if (current_location[0] < waypoint_location[0])
+                    next_move <= 2'b01; // Move up
+                else if (current_location[0] > waypoint_location[0])
+                    next_move <= 2'b10; // Move right
+                else if (current_location[1] < waypoint_location[1])
+                    next_move <= 2'b01; // Move up
+                else if (current_location[1] > waypoint_location[1])
+                    next_move <= 2'b00; // Move down
+                else
+                    next_move <= 2'b00; // No move
+            end
+            default: next_state <= IDLE;
+        endcase
+    end
+end
+
+// State register update
+always @ (posedge clk or negedge rst_n) begin
+    if (~rst_n)
+        state <= IDLE;
+    else
+        state <= next_state;
+end
+
+endmodule
